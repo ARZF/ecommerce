@@ -1,0 +1,36 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  user_service:
+    build:
+      context: .
+      dockerfile: ./user_service/Dockerfile
+    container_name: user_service
+    ports:
+      - "8001:8000"
+    depends_on:
+      - rabbitmq
+
+  product_service:
+    build:
+      context: .
+      dockerfile: ./product_service/Dockerfile
+    container_name: product_service
+    ports:
+      - "8002:8000"
+    depends_on:
+      - rabbitmq
+
+  order_service:
+    build:
+      context: .
+      dockerfile: ./order_service/Dockerfile
+    container_name: order_service
+    ports:
+      - "8003:8000"
+    depends_on:
+      - rabbitmq

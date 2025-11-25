@@ -1,0 +1,27 @@
+# --- Core Web Framework ---
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# --- Data Validation & ORM ---
+pydantic==2.5.2
+sqlalchemy==2.0.36
+alembic==1.13.2  # For DB migrations
+psycopg2-binary==2.9.9  # PostgreSQL driver
+
+# --- Message Broker (RabbitMQ) ---
+pika==1.3.2          # Simple blocking RabbitMQ client
+aio-pika==9.4.2      # Async alternative (recommended for async services)
+
+# --- Utilities ---
+python-dotenv==1.0.1  # Load env variables
+loguru==0.7.2         # Clean logging
+requests==2.32.5      # For HTTP calls between services
+
+# --- Security / Auth ---
+python-jose==3.3.0    # JWT encoding/decoding
+passlib[bcrypt]==1.7.4  # Password hashing
+
+# --- Optional but Useful ---
+redis==5.0.4          # Caching or message queue
+httpx==0.27.2         # Async HTTP client (better than requests for async)
+email-validator
