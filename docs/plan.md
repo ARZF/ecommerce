@@ -24,8 +24,8 @@
 
 ## 4. Security hardening
 
-- [ ] Hash passwords with passlib bcrypt (create, update, login verify)
-- [ ] JWT secret + expiry from env vars (shared `common/config.py`)
+- [x] Hash passwords with passlib bcrypt (create, update, login verify)
+- [x] JWT secret + expiry from env vars (shared `common/config.py`)
 - [ ] Token-verification dependency on protected routes
 - [ ] Restrict CORS origins
 

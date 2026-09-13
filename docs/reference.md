@@ -6,7 +6,7 @@
 
 ```
 ecommerce/
-├── common/                  # Shared code — empty stubs; only requirements.txt has content
+├── common/                  # Shared code — config.py (JWT/env settings); events.py still a stub
 ├── user_service/            # FastAPI service — port 8001 (only service with auth)
 ├── product_service/         # FastAPI service — port 8002 (products CRUD on SQLite, seeded)
 ├── order_service/           # FastAPI service — port 8003 (orders CRUD on SQLite)
@@ -50,8 +50,8 @@ All three services expose `GET /` returning `{"service": ..., "status": "running
 ## User service auth (current state)
 
 - JWT via `python-jose`, HS256, 30-minute expiry — [user_routes.py](../user_service/app/routes/user_routes.py)
-- Secret is hardcoded in the routes file (must move to env)
-- Passwords are compared as plain text (passlib installed but unused)
+- Secret and expiry come from [common/config.py](../common/config.py): `JWT_SECRET` / `JWT_EXPIRE_MINUTES` env vars, with a dev fallback baked in. The fallback is a real secret in the repo — set the env var outside development.
+- Passwords are bcrypt-hashed via passlib `CryptContext` on create and update, and verified on login. A row still holding a pre-hashing plaintext password gets a 401, not a 500 (the `UnknownHashError` is caught) — but it can never log in, so re-set it.
 - Token payload: `{"sub": "<user_id>", "email": ..., "exp": ...}` — no verification middleware anywhere yet
 
 ## Order service (current state)
@@ -70,7 +70,7 @@ All three services expose `GET /` returning `{"service": ..., "status": "running
 
 ## Stack & versions
 
-See [common/requirements.txt](../common/requirements.txt) — FastAPI 0.104, SQLAlchemy 2.0, pydantic 2.5, python-jose, passlib, pika/aio-pika (RabbitMQ), alembic, loguru. One shared requirements file for all services.
+See [common/requirements.txt](../common/requirements.txt) — FastAPI 0.104, SQLAlchemy 2.0, pydantic 2.5, python-jose, passlib + bcrypt, pika/aio-pika (RabbitMQ), alembic, loguru. One shared requirements file for all services. `bcrypt` is pinned to 4.3.0 on purpose — passlib 1.7.4 raises `ValueError` on bcrypt 5.x's 72-byte password check, which breaks hashing entirely.
 
 ## Conventions to follow
 
@@ -79,14 +79,17 @@ See [common/requirements.txt](../common/requirements.txt) — FastAPI 0.104, SQL
 - Errors: raise `HTTPException` with the specific status code + `detail` message (see user_routes for 400/401/404 patterns).
 - Model → schema separation: SQLAlchemy models never appear directly in responses; declare `response_model`.
 - Imports inside a service are `from app.xxx import ...` (Dockerfile runs uvicorn from the service dir).
+- Shared code is imported as `from common.xxx import ...`. That only resolves when the **repo root** is importable: in Docker `WORKDIR` is `/app`, which holds both `common/` and `app/`, but a local `cd <service> && uvicorn ...` has the service dir as cwd and raises `ModuleNotFoundError: No module named 'common'` — set `PYTHONPATH` to the repo root (see How to run).
 - Commits: Conventional Commits, `<type>(<scope>): <description>` — types and scopes in [CLAUDE.md](../CLAUDE.md).
 
 ## How to run
 
 ```bash
 docker compose up --build
-# dev, per service:
-cd user_service && uvicorn app.main:app --port 8001 --reload
+# dev, per service (PYTHONPATH is required for `from common.x import ...`):
+cd user_service && PYTHONPATH=.. uvicorn app.main:app --port 8001 --reload
 ```
+
+On PowerShell: `$env:PYTHONPATH=".."; uvicorn app.main:app --port 8001 --reload`
 
 FastAPI auto-docs: `http://localhost:8001/docs` etc.

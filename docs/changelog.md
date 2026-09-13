@@ -5,6 +5,15 @@
 
 Format: `YYYY-MM-DD — <what changed> — <files/services touched>`
 
+## 2026-09-14 — security hardening: bcrypt passwords + env-backed JWT config (plan §4.1-4.2) — `common/config.py`, `common/requirements.txt`, `user_service/app/routes/user_routes.py`, `user_service/check_auth.py`, `docs/*`
+
+- Passwords are bcrypt-hashed via a passlib `CryptContext` on create and update, verified on login — no response or endpoint changes
+- JWT secret and expiry moved out of user_routes into `common/config.py`, read from `JWT_SECRET` / `JWT_EXPIRE_MINUTES` with a dev fallback
+- `bcrypt==4.3.0` pinned in requirements — passlib 1.7.4 raises `ValueError` on bcrypt 5.x's 72-byte password check, so an unpinned install would break hashing on the next build
+- Rows still holding a pre-hashing plaintext password get a clean 401 instead of a 500 (`UnknownHashError` caught); they can't log in, so the password must be re-set
+- `check_auth.py` — assertion pass covering hash-at-rest, re-hash on update, wrong/unknown credentials, legacy rows, and the env-secret wiring (ran green)
+- First real consumer of `common/`: a local `cd <service> && uvicorn app.main:app` now needs `PYTHONPATH=..` (Docker is unaffected). Documented in reference.md.
+
 ## 2026-09-14 — give product_service real persistence (plan §2) — `product_service/app/*`, `product_service/check_products.py`, `docs/*`
 
 - `Product` model (`name`, `price`, `description`, `stock`, `created_at`) + `ProductCreate`/`ProductUpdate`/`ProductOut`; `db.py` and `main.py` mirror user_service
