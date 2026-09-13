@@ -7,9 +7,9 @@
 ```
 ecommerce/
 ├── common/                  # Shared code — empty stubs; only requirements.txt has content
-├── user_service/            # FastAPI service — port 8001 (only fully implemented service)
+├── user_service/            # FastAPI service — port 8001 (only service with auth)
 ├── product_service/         # FastAPI service — port 8002 (routes + hardcoded data; no DB)
-├── order_service/           # FastAPI service — port 8003 (empty skeleton files)
+├── order_service/           # FastAPI service — port 8003 (orders CRUD on SQLite)
 ├── frontend.html            # Static single-file UI
 ├── docker-compose.yml       # RabbitMQ + the 3 services
 ├── CLAUDE.md                # Agent guide — rules that load without being asked for
@@ -17,7 +17,7 @@ ecommerce/
 └── docs/                    # This documentation
 ```
 
-## Service anatomy (target layout — only user_service fully matches it)
+## Service anatomy (target layout — user_service and order_service match it)
 
 ```
 <service>/
@@ -31,10 +31,10 @@ ecommerce/
     └── events/              # RabbitMQ publishers/consumers (stub)
 ```
 
-- **DB**: SQLite file per service (`<service>.db`), hardcoded in `db.py` — it is **not** actually read from the `DATABASE_URL` env var yet, despite the comment there saying otherwise (see [user_service/app/db.py](../user_service/app/db.py)). Only user_service has a working `db.py`; the other two are empty files.
+- **DB**: SQLite file per service (`<service>.db`), hardcoded in `db.py` — it is **not** actually read from the `DATABASE_URL` env var yet, despite the comment there saying otherwise (see [user_service/app/db.py](../user_service/app/db.py)). user_service and order_service have a working `db.py`; product_service's is an empty file.
 - **Tables**: created by `Base.metadata.create_all(bind=engine)` in `main.py` (no Alembic yet).
-- **Docker**: build context is repo root (`context: .`), but each Dockerfile copies only `common/requirements.txt`, then `COPY <service>/ .`. The `common/` package itself is **not** in the image, so `from common.x import ...` fails in Docker *and* locally (cwd is the service dir). A Dockerfile has to copy `common/` before any shared module can be imported.
-- **Current status**: only user_service implements the full layout. product_service has `main.py` + `routes/` with a hardcoded list in the route — its `db.py`, `models/` and `schemas/` exist but are empty. order_service is empty files throughout.
+- **Docker**: build context is repo root (`context: .`). Each Dockerfile copies `common/requirements.txt` for pip, then `common/` (so `from common.x import ...` resolves at `/app`), then `COPY <service>/ .`.
+- **Current status**: user_service and order_service implement the full layout. product_service has `main.py` + `routes/` with a hardcoded list in the route — its `db.py`, `models/` and `schemas/` exist but are empty.
 
 ## Ports & endpoints
 
@@ -42,10 +42,10 @@ ecommerce/
 |---|---|---|---|
 | user_service | 8001 | `/users` | Full CRUD + `/users/login` (JWT) |
 | product_service | 8002 | `/products` | Hardcoded list in the route — no DB, no models |
-| order_service | 8003 | — | Empty files — no app, no routes |
+| order_service | 8003 | `/orders` | Full CRUD on SQLite + `GET /orders/user/{user_id}` |
 | RabbitMQ | 5672 | — | Mgmt UI on 15672 |
 
-user_service and product_service also expose `GET /` returning `{"service": ..., "status": "running"}`; order_service has no app to serve it.
+All three services expose `GET /` returning `{"service": ..., "status": "running"}`.
 
 ## User service auth (current state)
 
@@ -53,6 +53,13 @@ user_service and product_service also expose `GET /` returning `{"service": ...,
 - Secret is hardcoded in the routes file (must move to env)
 - Passwords are compared as plain text (passlib installed but unused)
 - Token payload: `{"sub": "<user_id>", "email": ..., "exp": ...}` — no verification middleware anywhere yet
+
+## Order service (current state)
+
+- `orders` table: `id`, `user_id`, `product_id`, `quantity`, `total_price`, `status` (default `pending`), `created_at`.
+- `total_price` is supplied by the client — nothing looks the product up, so it isn't validated against product_service.
+- `quantity >= 1` and `total_price >= 0` are enforced by pydantic `Field` constraints (422, not 400).
+- No auth on any route — `user_id` is trusted from the body.
 
 ## Stack & versions
 

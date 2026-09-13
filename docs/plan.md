@@ -2,13 +2,13 @@
 
 > What's next, in priority order. Agents: check off items in [status.md](status.md) when done and move them to [changelog.md](changelog.md).
 
-## 1. Finish order_service (highest priority)
+## 1. Finish order_service (highest priority) — done 2026-09-14
 
-- [ ] `db.py` — copy user_service pattern (SQLite + SQLAlchemy)
-- [ ] `order_model.py` — Order (id, user_id, product_id, quantity, total_price, status, created_at)
-- [ ] `order_schema.py` — OrderCreate / OrderOut
-- [ ] `order_routes.py` — CRUD + `GET /orders/user/{user_id}`
-- [ ] `main.py` — same FastAPI setup as user_service
+- [x] `db.py` — copy user_service pattern (SQLite + SQLAlchemy)
+- [x] `order_model.py` — Order (id, user_id, product_id, quantity, total_price, status, created_at)
+- [x] `order_schema.py` — OrderCreate / OrderOut
+- [x] `order_routes.py` — CRUD + `GET /orders/user/{user_id}`
+- [x] `main.py` — same FastAPI setup as user_service
 
 ## 2. Make product_service real
 

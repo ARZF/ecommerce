@@ -5,6 +5,15 @@
 
 Format: `YYYY-MM-DD — <what changed> — <files/services touched>`
 
+## 2026-09-14 — implement order_service (plan §1) — `order_service/app/*`, `order_service/check_orders.py`, `docs/*`
+
+- `db.py`, `main.py` mirror user_service; `Order` model + `OrderCreate`/`OrderUpdate`/`OrderOut` schemas
+- `/orders` full CRUD + `GET /orders/user/{user_id}`; `status` defaults to `pending`
+- Added `models/__init__.py`, `schemas/__init__.py` to match user_service layout
+- `check_orders.py` — framework-free assertion pass over the routes (ran green)
+- Deliberate deviation from user_routes style: input validation (`quantity >= 1`, `total_price >= 0`) uses pydantic `Field` constraints → 422, not a manual `HTTPException` 400
+- Docs: plan §1 checked off, status/reference updated (order_service no longer empty; stale Docker note corrected)
+
 ## 2026-09-14 — copy `common/` into all three images — `user_service/Dockerfile`, `product_service/Dockerfile`, `order_service/Dockerfile`
 
 - Each Dockerfile now does `COPY common/ ./common/` before the service code, so `from common.x import ...` resolves at `/app`
