@@ -20,6 +20,7 @@ requests==2.32.5      # For HTTP calls between services
 # --- Security / Auth ---
 python-jose==3.3.0    # JWT encoding/decoding
 passlib[bcrypt]==1.7.4  # Password hashing
+bcrypt==4.3.0         # Pinned: passlib 1.7.4 crashes on bcrypt 5.x (72-byte password check)
 
 # --- Optional but Useful ---
 redis==5.0.4          # Caching or message queue

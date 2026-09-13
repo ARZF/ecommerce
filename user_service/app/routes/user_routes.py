@@ -4,18 +4,18 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from jose import jwt
+from passlib.context import CryptContext
 
 from app.db import get_db
 from app.models.user_model import User
 from app.schemas.user_schema import UserCreate, UserOut, UserUpdate, UserLogin, TokenResponse
+from common.config import JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-# Simple JWT configuration
-SECRET_KEY = "your-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.get("/", response_model=List[UserOut])
@@ -41,7 +41,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
 
     user = User(
         email=payload.email,
-        password_hash=payload.password,
+        password_hash=pwd_context.hash(payload.password),
     )
     db.add(user)
     db.commit()
@@ -63,7 +63,7 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
         user.email = payload.email
 
     if payload.password is not None:
-        user.password_hash = payload.password
+        user.password_hash = pwd_context.hash(payload.password)
 
     db.add(user)
     db.commit()
@@ -91,14 +91,19 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password"
         )
     
-    # Verify password (simple check - comparing stored password with provided password)
-    # Note: In production, you should hash passwords when creating users
-    if user.password_hash != payload.password:
+    # Verify password against the stored bcrypt hash
+    try:
+        password_ok = pwd_context.verify(payload.password, user.password_hash)
+    except ValueError:
+        # Stored value isn't a recognised hash (row predates hashing) — treat as a mismatch
+        password_ok = False
+
+    if not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
-    
+
     # Create JWT token
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
@@ -106,7 +111,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         "email": user.email,
         "exp": expire
     }
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     
     return TokenResponse(access_token=encoded_jwt)
 
