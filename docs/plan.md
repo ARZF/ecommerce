@@ -16,11 +16,14 @@
 - [x] Full CRUD (create / update / delete, admin-style)
 - [x] Seed script for the current dummy products
 
-## 3. RabbitMQ event bus
+## 3. RabbitMQ event bus — partially done 2026-09-14
 
-- [ ] Implement `common/events.py` — shared publish/subscribe helpers (aio-pika is already in requirements)
-- [ ] Events: `user.created`, `order.created`, `product.updated`
-- [ ] order_service consumes `user.created` / product data instead of sync HTTP where sensible
+- [x] Implement `common/events.py` — shared publish/subscribe helpers (aio-pika is already in requirements)
+- [x] order_service consumes `user.created` on startup and logs it — proof the pipe works
+- [ ] Events: `order.created`, `product.updated` — only `user.created` is wired so far
+- [ ] order_service consumes product data instead of sync HTTP where sensible
+
+Fire-and-forget: no outbox, no retry, no DLQ. A failed publish is logged, not retried.
 
 ## 4. Security hardening
 

@@ -6,7 +6,7 @@
 
 ```
 ecommerce/
-├── common/                  # Shared code — config.py (JWT/env settings); events.py still a stub
+├── common/                  # Shared code — config.py (JWT/env settings), events.py (RabbitMQ helpers)
 ├── user_service/            # FastAPI service — port 8001 (only service with auth)
 ├── product_service/         # FastAPI service — port 8002 (products CRUD on SQLite, seeded)
 ├── order_service/           # FastAPI service — port 8003 (orders CRUD on SQLite)
@@ -67,6 +67,17 @@ All three services expose `GET /` returning `{"service": ..., "status": "running
 - [app/seed.py](../product_service/app/seed.py) holds `DUMMY_PRODUCTS` (the 5 items the route used to hardcode) and `seed_products(db)`, which is a no-op unless the table is empty — so ids stay 1-5 on a fresh DB and the frontend keeps working. main.py calls it at startup after `create_all`.
 - There is no uniqueness check on `name` (unlike `email` in user_routes) — product names aren't a natural key, so the routes only raise 404.
 - No auth — anyone can create/update/delete products.
+
+## Events (RabbitMQ)
+
+- [common/events.py](../common/events.py) is the only place that touches aio-pika: `publish(exchange, routing_key, payload)` and `consume(queue, callback, exchange=None, routing_key=None)`. Payloads are JSON; `consume` hands the callback a decoded `dict`.
+- `RABBITMQ_URL` comes from the environment, defaulting to `amqp://guest:guest@localhost/`. compose sets it to the `rabbitmq` service name for user_service and order_service.
+- The wiring depends on two shared constants in that module, `USER_EVENTS_EXCHANGE` (`"user_events"`, a durable topic exchange) and `USER_CREATED` (`"user.created"`). Both sides import them — a typo'd string literal here would silently drop every event, so don't inline the names.
+- Publisher: [user_events.py](../user_service/app/events/user_events.py) `publish_user_created(user)`, called at the end of `create_user`. It is **best-effort** — a broker outage logs a warning and the user is still created (verified: 201 with the broker stopped). It opens one connection per event.
+- Consumer: [order_events.py](../order_service/app/events/order_events.py) owns the queue `order_service.user_created`, bound to the exchange with routing key `user.created`. main.py starts it as an `asyncio` task in the FastAPI lifespan and cancels it on shutdown. It only logs — it is not a saga.
+- `publish` uses `aio_pika.connect` (fails fast); `consume` uses `connect_robust` (retries until the broker is up, which covers ordering against the compose healthcheck).
+- Nothing is durable across a broker wipe beyond the declared queue: user_service declares the exchange but no queue, so events published before the consumer has ever run are dropped.
+- End-to-end check: `docker compose up -d rabbitmq && python check_events.py`.
 
 ## Stack & versions
 

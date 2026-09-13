@@ -5,6 +5,15 @@
 
 Format: `YYYY-MM-DD — <what changed> — <files/services touched>`
 
+## 2026-09-14 — minimal RabbitMQ event flow (plan §3) — `common/events.py`, `user_service/app/*`, `order_service/app/*`, `docker-compose.yml`, `check_events.py`, `docs/*`
+
+- `common/events.py` — shared `publish(exchange, routing_key, payload)` and `consume(queue, callback, ...)` over aio-pika, with `RABBITMQ_URL` from the environment and a localhost fallback
+- user_service publishes `user.created` from `create_user` via `app/events/user_events.py` — best-effort, so a broker outage warns and still returns 201 (verified with the broker stopped)
+- order_service consumes it in `app/events/order_events.py`, started as a background task in the FastAPI lifespan; it only logs
+- compose: broker healthcheck, `condition: service_healthy` on `depends_on`, and `RABBITMQ_URL` for user_service and order_service
+- `check_events.py` — round-trips an event through a real broker (ran green against rabbitmq:3-management)
+- `check_orders.py` / `check_products.py` now put the repo root on `sys.path` — order_service imports `common/`, so the old single-dir path broke it
+
 ## 2026-09-14 — security hardening: bcrypt passwords + env-backed JWT config (plan §4.1-4.2) — `common/config.py`, `common/requirements.txt`, `user_service/app/routes/user_routes.py`, `user_service/check_auth.py`, `docs/*`
 
 - Passwords are bcrypt-hashed via a passlib `CryptContext` on create and update, verified on login — no response or endpoint changes
