@@ -6,6 +6,9 @@ WORKDIR /app
 COPY common/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy shared package (imported as `common.x` from the app dir)
+COPY common/ ./common/
+
 # Copy application code
 COPY product_service/ .
 
