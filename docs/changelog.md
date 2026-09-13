@@ -5,6 +5,10 @@
 
 Format: `YYYY-MM-DD — <what changed> — <files/services touched>`
 
+## 2026-09-14 — copy `common/` into all three images — `user_service/Dockerfile`, `product_service/Dockerfile`, `order_service/Dockerfile`
+
+- Each Dockerfile now does `COPY common/ ./common/` before the service code, so `from common.x import ...` resolves at `/app`
+
 ## 2026-09-12 — correct reference.md against the actual code — `docs/reference.md`
 
 - Dockerfiles copy only `common/requirements.txt`, not `common/` — imports of it fail in the image
