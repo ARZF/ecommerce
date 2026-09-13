@@ -5,6 +5,14 @@
 
 Format: `YYYY-MM-DD — <what changed> — <files/services touched>`
 
+## 2026-09-14 — give product_service real persistence (plan §2) — `product_service/app/*`, `product_service/check_products.py`, `docs/*`
+
+- `Product` model (`name`, `price`, `description`, `stock`, `created_at`) + `ProductCreate`/`ProductUpdate`/`ProductOut`; `db.py` and `main.py` mirror user_service
+- Replaced the hardcoded `DUMMY_PRODUCTS` list with DB-backed CRUD on `/products` — 404s only, no `name` uniqueness check (unlike `email` in user_routes)
+- `app/seed.py` inserts the 5 original dummy products only when the table is empty, so the frontend still gets data and ids stay 1-5
+- `check_products.py` — assertion pass over the routes, incl. seed idempotency and the frontend-visible fields (ran green)
+- Same pydantic `Field` validation (422) as order_service
+
 ## 2026-09-14 — implement order_service (plan §1) — `order_service/app/*`, `order_service/check_orders.py`, `docs/*`
 
 - `db.py`, `main.py` mirror user_service; `Order` model + `OrderCreate`/`OrderUpdate`/`OrderOut` schemas

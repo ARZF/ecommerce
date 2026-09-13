@@ -10,11 +10,11 @@
 - [x] `order_routes.py` — CRUD + `GET /orders/user/{user_id}`
 - [x] `main.py` — same FastAPI setup as user_service
 
-## 2. Make product_service real
+## 2. Make product_service real — done 2026-09-14
 
-- [ ] Product model + SQLite persistence (mirror user_service)
-- [ ] Full CRUD (create / update / delete, admin-style)
-- [ ] Seed script for the current dummy products
+- [x] Product model + SQLite persistence (mirror user_service)
+- [x] Full CRUD (create / update / delete, admin-style)
+- [x] Seed script for the current dummy products
 
 ## 3. RabbitMQ event bus
 
