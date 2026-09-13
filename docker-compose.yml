@@ -4,6 +4,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   user_service:
     build:
@@ -12,8 +17,11 @@ services:
     container_name: user_service
     ports:
       - "8001:8000"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq/
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   product_service:
     build:
@@ -23,7 +31,8 @@ services:
     ports:
       - "8002:8000"
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   order_service:
     build:
@@ -32,5 +41,8 @@ services:
     container_name: order_service
     ports:
       - "8003:8000"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq/
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy

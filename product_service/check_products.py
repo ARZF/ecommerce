@@ -11,7 +11,9 @@ import shutil
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _SERVICE_DIR)
+sys.path.insert(0, os.path.dirname(_SERVICE_DIR))  # repo root, so `common` resolves
 
 _workdir = tempfile.mkdtemp()
 atexit.register(shutil.rmtree, _workdir, ignore_errors=True)

@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from app.db import get_db
 from app.models.user_model import User
 from app.schemas.user_schema import UserCreate, UserOut, UserUpdate, UserLogin, TokenResponse
+from app.events.user_events import publish_user_created
 from common.config import JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
@@ -46,6 +47,10 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Announce the new user (best-effort — see app/events/user_events.py)
+    publish_user_created(user)
+
     return user
 
 
